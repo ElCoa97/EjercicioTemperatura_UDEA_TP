@@ -55,14 +55,14 @@ public class FrmEstadisticas extends JFrame {
 
         pnlEstadisticas.setLayout(new BoxLayout(pnlEstadisticas, BoxLayout.Y_AXIS));
         btnProcesar.addActionListener(this::btnCalcularEstadisticasClick);
-        
+
         calFecha.set(2024, Calendar.JANUARY, 1);
         dccFecha.setSelectedDate(calFecha);
 
         pnlDatosProceso.add(lblFecha);
         pnlDatosProceso.add(dccFecha);
         pnlDatosProceso.add(btnProcesar);
-        
+
         tpTemperaturas.addTab("Max y Min", pnlMaxMin);
         tpTemperaturas.addTab("Temperatura", pnlTemperatura);
 
@@ -80,83 +80,83 @@ public class FrmEstadisticas extends JFrame {
     }
 
     private void btnCalcularEstadisticasClick(ActionEvent evt) {
-    LocalDate fecha = dccFecha.getSelectedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate fecha = dccFecha.getSelectedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 
-    pnlMaxMin.removeAll();
-    pnlTemperatura.removeAll();
+        pnlMaxMin.removeAll();
+        pnlTemperatura.removeAll();
 
-    Map<String, RegistroTemperatura> estadisticas = TemperaturaServicio.getEstadisticas(fecha, datos);
+        Map<String, RegistroTemperatura> estadisticas = TemperaturaServicio.getEstadisticas(fecha, datos);
 
-    // Tabla Maximos y Minimos
-    String[] columnas = { "Indicador", "Ciudad", "Temperatura" };
-    DefaultTableModel modelo = new DefaultTableModel(columnas, 0);
+        // Tabla Maximos y Minimos
+        String[] columnas = { "Indicador", "Ciudad", "Temperatura" };
+        DefaultTableModel modelo = new DefaultTableModel(columnas, 0);
 
-    if (estadisticas.isEmpty()) {
-        modelo.addRow(new Object[]{ "Máxima", "—", "No hay datos" });
-        modelo.addRow(new Object[]{ "Mínima", "—", "No hay datos" });
-    } else {
-        for (Map.Entry<String, RegistroTemperatura> entry : estadisticas.entrySet()) {
-            String tipo = entry.getKey(); // "Máxima" o "Mínima"
-            RegistroTemperatura rt = entry.getValue();
-            modelo.addRow(new Object[] { tipo, rt.getCiudad(), String.format("%.2f °C", rt.getTemperatura()) });
+        if (estadisticas.isEmpty()) {
+            modelo.addRow(new Object[] { "Máxima", "—", "No hay datos" });
+            modelo.addRow(new Object[] { "Mínima", "—", "No hay datos" });
+        } else {
+            for (Map.Entry<String, RegistroTemperatura> entry : estadisticas.entrySet()) {
+                String tipo = entry.getKey(); // "Máxima" o "Mínima"
+                RegistroTemperatura rt = entry.getValue();
+                modelo.addRow(new Object[] { tipo, rt.getCiudad(), String.format("%.2f °C", rt.getTemperatura()) });
+            }
         }
+
+        JTable tablaMaxMin = new JTable(modelo);
+        tablaMaxMin.setEnabled(false);
+        tablaMaxMin.getTableHeader().setReorderingAllowed(false);
+        tablaMaxMin.setRowHeight(25);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < tablaMaxMin.getColumnCount(); i++) {
+            tablaMaxMin.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
+        JScrollPane scrollMaxMin = new JScrollPane(tablaMaxMin);
+        scrollMaxMin.setPreferredSize(new Dimension(500, 100));
+        pnlMaxMin.add(scrollMaxMin, BorderLayout.CENTER);
+
+        // Tabla de todas las ciudades
+        String[] columnasCiudad = { "Ciudad", "Temperatura" };
+        DefaultTableModel modeloCiudad = new DefaultTableModel(columnasCiudad, 0);
+
+        Set<String> ciudades = datos.stream()
+                .map(RegistroTemperatura::getCiudad)
+                .collect(Collectors.toCollection(TreeSet::new)); // Orden alfabético
+
+        for (String ciudad : ciudades) {
+            Optional<RegistroTemperatura> registro = datos.stream()
+                    .filter(r -> r.getCiudad().equals(ciudad) && r.getFecha().equals(fecha))
+                    .findFirst();
+
+            String tempStr = registro.isPresent()
+                    ? String.format("%.2f °C", registro.get().getTemperatura())
+                    : "No hay datos";
+
+            modeloCiudad.addRow(new Object[] { ciudad, tempStr });
+        }
+
+        JTable tablaCiudad = new JTable(modeloCiudad);
+        tablaCiudad.setEnabled(false);
+        tablaCiudad.getTableHeader().setReorderingAllowed(false);
+        tablaCiudad.setRowHeight(25);
+
+        DefaultTableCellRenderer centerRendererCiudad = new DefaultTableCellRenderer();
+        centerRendererCiudad.setHorizontalAlignment(SwingConstants.CENTER);
+        for (int i = 0; i < tablaCiudad.getColumnCount(); i++) {
+            tablaCiudad.getColumnModel().getColumn(i).setCellRenderer(centerRendererCiudad);
+        }
+
+        JScrollPane scrollCiudad = new JScrollPane(tablaCiudad);
+        scrollCiudad.setPreferredSize(new Dimension(500, 150));
+        pnlTemperatura.add(scrollCiudad, BorderLayout.CENTER);
+
+        // Actualizar interfaz
+        pnlMaxMin.revalidate();
+        pnlMaxMin.repaint();
+        pnlTemperatura.revalidate();
+        pnlTemperatura.repaint();
     }
-
-    JTable tablaMaxMin = new JTable(modelo);
-    tablaMaxMin.setEnabled(false);
-    tablaMaxMin.getTableHeader().setReorderingAllowed(false);
-    tablaMaxMin.setRowHeight(25);
-
-    DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-    centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-    for (int i = 0; i < tablaMaxMin.getColumnCount(); i++) {
-        tablaMaxMin.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
-    }
-
-    JScrollPane scrollMaxMin = new JScrollPane(tablaMaxMin);
-    scrollMaxMin.setPreferredSize(new Dimension(500, 100));
-    pnlMaxMin.add(scrollMaxMin, BorderLayout.CENTER);
-
-    // Tabla de todas las ciudades
-    String[] columnasCiudad = { "Ciudad", "Temperatura" };
-    DefaultTableModel modeloCiudad = new DefaultTableModel(columnasCiudad, 0);
-
-    Set<String> ciudades = datos.stream()
-        .map(RegistroTemperatura::getCiudad)
-        .collect(Collectors.toCollection(TreeSet::new)); // Orden alfabético
-
-    for (String ciudad : ciudades) {
-        Optional<RegistroTemperatura> registro = datos.stream()
-            .filter(r -> r.getCiudad().equals(ciudad) && r.getFecha().equals(fecha))
-            .findFirst();
-
-        String tempStr = registro.isPresent()
-            ? String.format("%.2f °C", registro.get().getTemperatura())
-            : "No hay datos";
-
-        modeloCiudad.addRow(new Object[]{ ciudad, tempStr });
-    }
-
-    JTable tablaCiudad = new JTable(modeloCiudad);
-    tablaCiudad.setEnabled(false);
-    tablaCiudad.getTableHeader().setReorderingAllowed(false);
-    tablaCiudad.setRowHeight(25);
-
-    DefaultTableCellRenderer centerRendererCiudad = new DefaultTableCellRenderer();
-    centerRendererCiudad.setHorizontalAlignment(SwingConstants.CENTER);
-    for (int i = 0; i < tablaCiudad.getColumnCount(); i++) {
-        tablaCiudad.getColumnModel().getColumn(i).setCellRenderer(centerRendererCiudad);
-    }
-
-    JScrollPane scrollCiudad = new JScrollPane(tablaCiudad);
-    scrollCiudad.setPreferredSize(new Dimension(500, 150));
-    pnlTemperatura.add(scrollCiudad, BorderLayout.CENTER);
-
-    // Actualizar interfaz
-    pnlMaxMin.revalidate();
-    pnlMaxMin.repaint();
-    pnlTemperatura.revalidate();
-    pnlTemperatura.repaint();
-}
 
 }

@@ -18,8 +18,7 @@ public class TemperaturaServicio {
 
     public static List<RegistroTemperatura> getDatos(String nombreArchivo) {
         DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("d/M/yyyy");
-        try {
-            Stream<String> lineas = Files.lines(Paths.get(nombreArchivo));
+        try (Stream<String> lineas = Files.lines(Paths.get(nombreArchivo))){
             return lineas.skip(1)
                     .map(linea -> linea.split(","))
                     .map(textos -> new RegistroTemperatura(textos[0], LocalDate.parse(textos[1], formatoFecha),

@@ -13,6 +13,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -111,6 +112,11 @@ public class FrmTemperatura extends JFrame {
     private void btnGraficarClick() {
         LocalDate desde = dccDesde.getSelectedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate hasta = dccHasta.getSelectedDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+        if (hasta.isBefore(desde)) {
+            JOptionPane.showMessageDialog(this, "La fecha 'Hasta' debe ser posterior o igual a 'Desde'");
+            return;
+        }
 
         tpTemperaturas.setSelectedIndex(0);
 
